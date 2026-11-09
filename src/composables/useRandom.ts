@@ -21,7 +21,7 @@ export interface FetchRandomOptions {
 }
 
 /**
- * 调用后端代理 /api/random（Cloudflare Pages Function）。
+ * 调用后端代理 /api/random（Cloudflare Worker）。
  * 失败时抛出 Error，调用方负责展示。
  */
 export async function fetchRandom(

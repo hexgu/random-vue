@@ -1,5 +1,17 @@
-# Cloudflare Pages 项目配置
-# 部署：bun run deploy  （等价于 wrangler pages deploy dist）
+# Cloudflare Workers 配置（静态资源 + /api/random Worker）
+# 部署：bun run deploy  （等价于 wrangler deploy）
+#
+# 采用 Workers + Static Assets 形态：
+#   - main 指向 Worker 入口，负责 /api/random；
+#   - [assets] 指向 Vite 构建产物 dist/，其余请求由静态资源（CDN）直接返回，
+#     未知路径回退到 index.html（单页应用）。
 name = "random-vue"
 compatibility_date = "2025-11-01"
-pages_build_output_dir = "dist"
+
+main = "worker/index.ts"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]

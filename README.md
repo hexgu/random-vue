@@ -1,12 +1,12 @@
 # 随机小站 · random-vue
 
-一个基于 [random.org](https://www.random.org/) 真随机数的 Vue 单页应用，可直接部署到 **Cloudflare Pages**。
+一个基于 [random.org](https://www.random.org/) 真随机数的 Vue 单页应用，可直接部署到 **Cloudflare Workers（静态资源 / Static Assets）**。
 包含两个小功能：
 
 1. **Linux 端口生成器** —— 在 `1024 ~ 49151`（IANA 注册端口 / 用户端口）范围内随机生成可用端口，支持去重、排序、一键复制，并标注命中的常见服务（如 3306 MySQL、6379 Redis）。
 2. **今天吃点啥** —— 选择困难症救星，按菜系分类随机抽取菜品，支持“不重复”模式，把决定权交给真随机数。
 
-> 随机数由 random.org 提供，前端不直接调用（避免 API Key 泄露与跨域问题），而是通过 **Cloudflare Pages Functions** 在服务端代理请求。
+> 随机数由 random.org 提供，前端不直接调用（避免 API Key 泄露与跨域问题），而是通过 **Cloudflare Worker** 在服务端代理请求。
 
 ![Linux 端口生成器](./docs/port-generator.png)
 
@@ -19,7 +19,7 @@
 ## ✨ 特性
 
 - **Vue 3 + Vite + TypeScript**，纯前端 + 单个 Serverless 函数，零数据库、零长期运行服务器。
-- **一键部署 Cloudflare Pages**：静态资源走 CDN，`/api/random` 由 Pages Functions 运行在 Cloudflare 边缘网络。
+- **一键部署 Cloudflare Workers**：静态资源走 CDN（Static Assets），`/api/random` 由 Worker 运行在 Cloudflare 边缘网络。
 - **真正的 random.org 真随机数**：通过官方 JSON-RPC API（`generateIntegers`）获取。
 - **渐进降级、永不白屏**：
   1. 配置了 `RANDOM_ORG_API_KEY` → 官方 JSON-RPC API（推荐，配额独立）；
@@ -39,8 +39,8 @@
 | 前端框架 | Vue 3（`<script setup>` + TypeScript） |
 | 样式 | Tailwind CSS v4（`@theme` 设计令牌 + `@layer components` 原语） |
 | 构建工具 | Vite（`@tailwindcss/vite` 插件） |
-| 部署平台 | Cloudflare Pages |
-| 服务端 | Cloudflare Pages Functions（Workers 运行时） |
+| 部署平台 | Cloudflare Workers（Static Assets） |
+| 服务端 | Cloudflare Worker（复用 `functions/api/random.ts` 的请求处理器） |
 | 随机源 | random.org JSON-RPC API / 公开接口 |
 
 ---
@@ -49,8 +49,10 @@
 
 ```
 random-vue/
+├── worker/
+│   └── index.ts             # Cloudflare Worker 入口：/api/* 委托 functions，其余走静态资源
 ├── functions/
-│   └── api/random.ts        # Cloudflare Pages Function：/api/random 代理
+│   └── api/random.ts        # /api/random 请求处理器（Pages Function 形态，与 Worker 共用）
 ├── shared/
 │   └── random.ts            # 与 random.org 交互的核心逻辑（前端 dev 与生产共用）
 ├── src/
@@ -67,7 +69,7 @@ random-vue/
 ├── tests/random.test.ts     # bun test 单元测试
 ├── index.html
 ├── vite.config.ts           # 含 dev 环境的 /api/random 中间件
-├── wrangler.toml            # Cloudflare Pages 配置
+├── wrangler.toml            # Cloudflare Workers 配置（main + static assets）
 └── .dev.vars.example        # 本地环境变量示例
 ```
 
@@ -115,7 +117,7 @@ cp .dev.vars.example .dev.vars
 
 ## 🔌 /api/random 接口
 
-由 `functions/api/random.ts` 提供，GET 请求：
+由 `worker/index.ts`（内部复用 `functions/api/random.ts` 的处理器）提供，GET 请求：
 
 | 参数 | 说明 | 默认 |
 | --- | --- | --- |
@@ -127,7 +129,7 @@ cp .dev.vars.example .dev.vars
 示例：
 
 ```bash
-curl "https://your-project.pages.dev/api/random?n=5&min=1024&max=49151&unique=1"
+curl "https://random-vue.<subdomain>.workers.dev/api/random?n=5&min=1024&max=49151&unique=1"
 ```
 
 成功响应：
@@ -156,7 +158,10 @@ curl "https://your-project.pages.dev/api/random?n=5&min=1024&max=49151&unique=1"
 
 ---
 
-## ☁️ 部署到 Cloudflare Pages
+## ☁️ 部署到 Cloudflare Workers
+
+项目采用 **Workers + Static Assets**：`wrangler.toml` 中 `main` 指向 `worker/index.ts`，
+`[assets]` 指向 `dist/`；`/api/*` 由 Worker 处理，其余请求由静态资源（CDN）返回。
 
 ### 方式 A：Wrangler CLI（推荐）
 
@@ -164,28 +169,25 @@ curl "https://your-project.pages.dev/api/random?n=5&min=1024&max=49151&unique=1"
 # 1) 登录 Cloudflare（或改用 CLOUDFLARE_API_TOKEN 环境变量）
 bunx wrangler login
 
-# 2) 首次创建 Pages 项目（项目名可自定义，与 wrangler.toml 中 name 保持一致）
-bunx wrangler pages project create random-vue
+# 2) （可选，强烈推荐）配置自己的 random.org API Key（存为 Worker Secret）
+bunx wrangler secret put RANDOM_ORG_API_KEY
 
-# 3) （可选，强烈推荐）配置自己的 random.org API Key
-bunx wrangler pages secret put RANDOM_ORG_API_KEY --project-name random-vue
-
-# 4) 构建并部署
-bun run deploy        # = bun run build && wrangler pages deploy dist
+# 3) 构建并部署
+bun run deploy        # = bun run build && wrangler deploy
 ```
 
-部署完成后会得到一个 `https://<project>.pages.dev` 域名。
+部署完成后会得到一个 `https://random-vue.<subdomain>.workers.dev` 域名。
+首次部署会自动创建 Worker（名称取 `wrangler.toml` 的 `name`）。
 
-### 方式 B：Git 集成（Dashboard）
+### 方式 B：Git 集成（Workers Builds）
 
 1. 把仓库推送到 GitHub / GitLab；
-2. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → 连接仓库；
+2. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Worker** → 连接仓库；
 3. 构建设置：
-   - **Framework preset**: `Vue`
    - **Build command**: `bun run build`
-   - **Build output directory**: `dist`
-4. 在 **Settings → Environment variables / Secrets** 添加 `RANDOM_ORG_API_KEY`（可选）；
-5. 保存并部署。`functions/` 目录会被自动识别为 Pages Functions。
+   - **Deploy command**: `npx wrangler deploy`
+4. 在 **Settings → Variables and Secrets** 添加 `RANDOM_ORG_API_KEY`（可选）；
+5. 保存并部署。
 
 ### 关于 random.org API Key
 
@@ -213,4 +215,4 @@ bun run typecheck   # vue-tsc 类型检查
 
 ---
 
-Made with Vue 3 + Cloudflare Pages · 随机数来源 [random.org](https://www.random.org/)
+Made with Vue 3 + Cloudflare Workers · 随机数来源 [random.org](https://www.random.org/)

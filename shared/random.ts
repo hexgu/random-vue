@@ -2,7 +2,7 @@
  * 与 random.org 交互的核心逻辑。
  *
  * 该模块同时被两处使用：
- *   1. functions/api/random.ts —— Cloudflare Pages Functions（生产环境）
+ *   1. worker/index.ts / functions/api/random.ts —— Cloudflare Workers（生产环境）
  *   2. vite.config.ts 的 dev 中间件 —— 本地 `vite dev` 调试
  *
  * 因此只依赖 Web 标准 API（fetch / crypto / TextDecoder），不依赖 Node 专有模块。
@@ -27,7 +27,7 @@ const REQUEST_TIMEOUT_MS = 6000
 const OVERALL_BUDGET_MS = 12000
 
 export interface RandomEnv {
-  /** 通过 `wrangler pages secret put RANDOM_ORG_API_KEY` 或 .dev.vars 配置 */
+  /** 通过 `wrangler secret put RANDOM_ORG_API_KEY` 或 .dev.vars 配置 */
   RANDOM_ORG_API_KEY?: string
 }
 
@@ -111,7 +111,7 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Re
       ...init,
       signal: controller.signal,
       headers: {
-        'user-agent': 'random-vue/1.0 (Cloudflare Pages Function; +https://www.random.org/)',
+        'user-agent': 'random-vue/1.0 (Cloudflare Worker; +https://www.random.org/)',
         accept: 'application/json, text/plain, */*',
         ...(init.headers ?? {}),
       },

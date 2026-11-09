@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
       <p>
         随机数由
         <a href="https://www.random.org/" target="_blank" rel="noopener noreferrer">random.org</a>
-        提供，经 Cloudflare Pages Functions 服务端代理请求。
+        提供，经 Cloudflare Worker 服务端代理请求。
       </p>
       <p class="muted">
         当 random.org 暂时不可用时，会自动降级为运行环境本地加密随机（crypto.getRandomValues），并在结果处明确标注。

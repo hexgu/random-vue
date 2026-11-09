@@ -9,8 +9,9 @@
     "build": "vite build",
     "build:check": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "pages:dev": "bun run build && wrangler pages dev dist",
-    "deploy": "bun run build && wrangler pages deploy dist",
+    "worker:dev": "bun run build && wrangler dev",
+    "deploy": "bun run build && wrangler deploy",
+    "deploy:dry": "bun run build && wrangler deploy --dry-run",
     "test": "bun test",
     "typecheck": "vue-tsc --noEmit"
   },
