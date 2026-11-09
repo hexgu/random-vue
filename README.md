@@ -28,7 +28,7 @@
   4. 全部失败 → 运行环境（Cloudflare 边缘 / 本地 Node）的 `crypto.getRandomValues`，并在界面明确标注「本地降级随机」。
 - **对限流更友好**：对 `429 / 5xx` 做有限次退避重试；单次最多生成 100 个整数。
 - **细节体验**：响应式布局、亮/暗主题（记忆偏好）、复制反馈、来源与剩余配额展示、常见端口识别。
-- **Apple 风格设计系统**：克制的中性色 + 单一系统蓝强调色、半透明材质顶栏、带弹簧动效的分段控件（可中断、尊重 `prefers-reduced-motion`）、iOS 开关与清晰的信息层级。
+- **Apple 风格设计系统（Tailwind CSS v4）**：克制的中性色 + 单一系统蓝强调色、半透明材质顶栏、带弹簧动效的分段控件（可中断、尊重 `prefers-reduced-motion`）、iOS 开关与清晰的信息层级。整套样式由 Tailwind v4 驱动：`@theme` 设计令牌 + `@layer components` 语义原语。
 
 ---
 
@@ -37,7 +37,8 @@
 | 层 | 选型 |
 | --- | --- |
 | 前端框架 | Vue 3（`<script setup>` + TypeScript） |
-| 构建工具 | Vite |
+| 样式 | Tailwind CSS v4（`@theme` 设计令牌 + `@layer components` 原语） |
+| 构建工具 | Vite（`@tailwindcss/vite` 插件） |
 | 部署平台 | Cloudflare Pages |
 | 服务端 | Cloudflare Pages Functions（Workers 运行时） |
 | 随机源 | random.org JSON-RPC API / 公开接口 |
@@ -62,13 +63,31 @@ random-vue/
 │   │   └── foods.ts         # 菜品数据
 │   ├── App.vue
 │   ├── main.ts
-│   └── style.css
+│   └── style.css            # Tailwind 入口：@theme 令牌 / 组件原语 / 动画 / 无障碍
 ├── tests/random.test.ts     # bun test 单元测试
 ├── index.html
 ├── vite.config.ts           # 含 dev 环境的 /api/random 中间件
 ├── wrangler.toml            # Cloudflare Pages 配置
 └── .dev.vars.example        # 本地环境变量示例
 ```
+
+---
+
+## 🎨 样式系统（Tailwind CSS v4）
+
+样式已从手写 CSS 迁移到 **Tailwind CSS v4**，但保留原有的 Apple 设计语言。结构分三层：
+
+1. **设计令牌（`@theme`）**：`src/style.css` 的 `:root` / `[data-theme='dark']` 集中定义颜色、
+   圆角、阴影、缓动等 CSS 变量，再用 `@theme inline` 映射为语义工具类
+   （`bg-canvas`、`text-ink`、`border-line`、`shadow-card`…）。映射的是运行时变量，
+   因此亮/暗主题可随 `<html data-theme>` 即时切换，无需成对编写 `dark:` 变体。
+2. **组件原语（`@layer components`）**：面板、按钮、输入框、iOS 开关、分段控件、状态徽章等
+   可复用部件用 `@apply` 组合工具类，保证设计系统级的一致性与可读性。
+3. **基础层与无障碍**：`@layer base` 负责排版 / 链接 / 焦点环；文件末尾的媒体查询负责
+   `prefers-reduced-motion` / `prefers-reduced-transparency` / `prefers-contrast` 降级。
+
+组件模板（`App.vue` / `PortGenerator.vue` / `FoodPicker.vue`）继续使用这些语义类名，
+并配合 Tailwind 工具类描述布局；主题切换仍由 `App.vue` 通过 `<html data-theme>` 完成。
 
 ---
 

@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { handleRandomRequest } from './shared/random.ts'
@@ -51,7 +52,7 @@ function randomApiPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [vue(), randomApiPlugin()],
+  plugins: [vue(), tailwindcss(), randomApiPlugin()],
   build: {
     outDir: 'dist',
     target: 'es2022',
