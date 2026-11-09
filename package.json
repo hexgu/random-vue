@@ -1,0 +1,28 @@
+{
+  "name": "random-vue",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "基于 random.org 真随机数的 Vue 小站：Linux 端口生成器 + 今天吃点啥",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:check": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "pages:dev": "bun run build && wrangler pages dev dist",
+    "deploy": "bun run build && wrangler pages deploy dist",
+    "test": "bun test",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.45"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261109.1",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "5",
+    "vite": "^8.3.6",
+    "vue-tsc": "^3.3.14",
+    "wrangler": "^4.158.0"
+  }
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# 单页应用，无服务端路由；静态资源位于 /assets

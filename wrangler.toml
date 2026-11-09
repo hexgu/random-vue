@@ -1,0 +1,5 @@
+# Cloudflare Pages 项目配置
+# 部署：bun run deploy  （等价于 wrangler pages deploy dist）
+name = "random-vue"
+compatibility_date = "2025-11-01"
+pages_build_output_dir = "dist"
